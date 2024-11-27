@@ -1,4 +1,0 @@
-loguru
-python-dotenv
-tqdm
-typer
