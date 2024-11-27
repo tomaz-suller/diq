@@ -7,13 +7,12 @@ name = "sf_permits"
 version = "0.0.1"
 description = "Politecnico di Milano Data and Information Quality 2024-2025 project"
 authors = [
-  { name = "Your name (or your organization/company/team)" },
+    { name = "Tomaz Maia Suller" },
 ]
 
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    
 ]
 requires-python = "~=3.12"
 dependencies = [
