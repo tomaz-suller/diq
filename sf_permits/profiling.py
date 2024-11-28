@@ -128,7 +128,7 @@ SERIES_METRICS = {
     standard_deviation_outliers,
 }
 
-ALL_METRICS = {uniqueness} #DATAFRAME_METRICS | SERIES_METRICS
+ALL_METRICS = DATAFRAME_METRICS | SERIES_METRICS
 
 app = typer.Typer()
 
