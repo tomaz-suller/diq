@@ -21,6 +21,7 @@ CLEAN_DATA_DIR = DATA_DIR / "clean"
 CLEAN_DATASET_PATH = CLEAN_DATA_DIR / "dataset.parquet"
 NEIGHBOURHOOD_SHAPEFILE_PATH = EXTERNAL_DATA_DIR  / "analysis-neighborhoods"
 ZIP_CODE_SHAPEFILE_PATH = EXTERNAL_DATA_DIR / "bay-area-zip-codes"
+STREET_NAMES_PATH = EXTERNAL_DATA_DIR / "street-names.csv"
 
 MODELS_DIR = PROJ_ROOT / "models"
 
