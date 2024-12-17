@@ -174,6 +174,14 @@ wheels = [
 ]
 
 [[package]]
+name = "desbordante"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/71/a40b1cf1edab64cca22b877b077859c4620502132e47ef9e9a0b1529ae2b/desbordante-2.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4e1d6cbfc08591a01e93ee42812779fb3f1d083bf995d03d49cdddd9bcf0a042", size = 2748859 },
+]
+
+[[package]]
 name = "executing"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -887,6 +895,7 @@ name = "sf-permits"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
+    { name = "desbordante" },
     { name = "geopandas" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
@@ -896,12 +905,19 @@ dependencies = [
     { name = "pandas", extra = ["parquet"] },
     { name = "python-dotenv" },
     { name = "seaborn" },
+    { name = "strsimpy" },
     { name = "tqdm" },
     { name = "typer" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "sf-permits" },
+]
+
 [package.metadata]
 requires-dist = [
+    { name = "desbordante", specifier = ">=2.1.0" },
     { name = "geopandas", specifier = ">=1.0.1" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
@@ -911,6 +927,7 @@ requires-dist = [
     { name = "pandas", extras = ["parquet"], specifier = ">=2.2.3" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "strsimpy", specifier = ">=0.2.1" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "typer", specifier = ">=0.13.1" },
 ]
@@ -971,6 +988,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521 },
+]
+
+[[package]]
+name = "strsimpy"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0d/7e/5ccf2edfa1e97154dbf3119fd240b1f5fbe32ad1edd1db5f7a94d3f7a037/strsimpy-0.2.1.tar.gz", hash = "sha256:0842eb57f7af86c882a59a1bc8721ec2580a267e563fd0503ced2972040372c9", size = 24403 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/90/bd55a4b18f4b75a76e32f444975d2c869d692eb23897d116d47122f88d1a/strsimpy-0.2.1-py3-none-any.whl", hash = "sha256:d676a440d5d3dbcf5ba92d01814a03a218776ce07bd7a8185da7019e04cf9ba7", size = 45870 },
 ]
 
 [[package]]

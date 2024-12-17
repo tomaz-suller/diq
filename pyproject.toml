@@ -16,6 +16,7 @@ classifiers = [
 ]
 requires-python = "~=3.12"
 dependencies = [
+    "desbordante>=2.1.0",
     "geopandas>=1.0.1",
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.5",
@@ -25,6 +26,7 @@ dependencies = [
     "pandas[parquet]>=2.2.3",
     "python-dotenv>=1.0.1",
     "seaborn>=0.13.2",
+    "strsimpy>=0.2.1",
     "tqdm>=4.67.1",
     "typer>=0.13.1",
 ]
