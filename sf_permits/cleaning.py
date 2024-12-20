@@ -27,7 +27,10 @@ MISSING_AS_FALSE_COLUMNS = [
     "Site Permit",
     "Voluntary Soft-Story Retrofit",
 ]
-MISSING_STREET_NAME = "situs to be assigned"
+MISSING_STREET_NAME = [
+    "situs to be assigned",
+    "unknown",
+]
 
 
 def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
@@ -68,7 +71,7 @@ def remove_street_suffix_from_name(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def assign_na_to_missing_street_name(df: pd.DataFrame) -> pd.DataFrame:
-    df[df["Street Name"] == MISSING_STREET_NAME] = pd.NA
+    df[df["Street Name"].isin(MISSING_STREET_NAME)] = pd.NA
     return df
 
 
