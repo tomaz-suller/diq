@@ -184,7 +184,10 @@ def main(
     logger.info("Starting data cleaning")
     logger.debug("Loading from {}", input_path)
     raw_df = pd.read_csv(input_path)
-    clean_df = raw_df
+    logger.debug("Initial data has shape {}", raw_df.shape)
+    # We start from deleting completely empty rows
+    clean_df = raw_df.dropna(how="all", axis="index")
+    logger.debug("Shape after dropping empty rows is {}", clean_df.shape)
 
     logger.info("Starting normalisation")
     # # Normalisation
