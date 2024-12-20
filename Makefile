@@ -15,7 +15,7 @@ PYTHON_INTERPRETER = python
 .PHONY: requirements
 requirements:
 	uv sync
-	
+
 
 
 
@@ -46,6 +46,9 @@ format:
 data: requirements
 	$(PYTHON_INTERPRETER) sf_permits/dataset.py
 
+.PHONY: report
+report:
+	make -C reports
 
 #################################################################################
 # Self Documenting Commands                                                     #
