@@ -170,6 +170,9 @@ def string_to_boolean(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def report_missing_value_count(df: pd.DataFrame) -> None:
+    logger.debug("Missing value count \n{}", df.isna().sum())
+
 @app.command()
 def main(
     input_path: Path = RAW_DATASET_PATH,
@@ -215,7 +218,10 @@ def main(
     logger.success("Error correction complete")
     logger.info("Starting missing value imputation")
     # # Missing value imputation
+    report_missing_value_count(clean_df)
+
     clean_df = string_to_boolean(clean_df)
+    report_missing_value_count(clean_df)
 
     # ## Fill location using `Block` and `Lot`
     logger.info("Imputing based on block and lot")
@@ -229,6 +235,7 @@ def main(
             "Supervisor District",
         ),
     )
+    report_missing_value_count(clean_df)
 
     # ## Fill location using `Street Name`
     logger.info("Imputing based on street name")
@@ -241,6 +248,7 @@ def main(
             "Supervisor District",
         ),
     )
+    report_missing_value_count(clean_df)
 
     # After imputing the location, we are able to use it to correct
     # and impute `Neighborhood` and `Zipcode` as we did before
@@ -251,6 +259,7 @@ def main(
     )
     logger.info("Reapplying zipcode matching")
     clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
+    report_missing_value_count(clean_df)
 
     logger.success("Error correction complete")
     # Outlier detection
