@@ -73,7 +73,7 @@ def assign_na_to_missing_street_name(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def assign_na_completion_to_incomplete_permit(df: pd.DataFrame) -> pd.DataFrame:
-    df[df["Current Status"] != "complete"] = pd.NA
+    df.loc[df["Current Status"] != "complete", "Completed Date"] = pd.NA
     return df
 
 
