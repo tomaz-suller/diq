@@ -31,6 +31,14 @@ MISSING_STREET_NAME = [
     "situs to be assigned",
     "unknown",
 ]
+DUPLICATE_IDENTIFIERS = [
+    "Permit Number",
+    "Street Name",
+    "Street Number",
+    "Street Number Suffix",
+    "Unit",
+    "Unit Suffix",
+]
 
 
 def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
@@ -176,6 +184,11 @@ def string_to_boolean(df: pd.DataFrame) -> pd.DataFrame:
 def report_missing_value_count(df: pd.DataFrame) -> None:
     logger.debug("Missing value count \n{}", df.isna().sum())
 
+
+def drop_duplicate_position_permits(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop_duplicates(subset=DUPLICATE_IDENTIFIERS)
+
+
 @app.command()
 def main(
     input_path: Path = RAW_DATASET_PATH,
@@ -272,7 +285,7 @@ def main(
     # TODO
 
     # Duplicate removal
-    # TODO
+    clean_df = drop_duplicate_position_permits(clean_df)
 
     logger.success("Data cleaning complete")
     logger.info("Saving cleaned data")
