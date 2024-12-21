@@ -51,6 +51,29 @@ steps specifically required by the employed model.
 
 # Data Cleaning
 
+## Data Normalisation
+As no major formatting issues were found in the dataset, only minor
+data normalisation was required.
+Namely,
+attributes encoding dates whose data type was inadequately
+inferred by Pandas were encoded as `datetime` objects;
+the attribute name on the neighbourhood associated with a permit was
+renamed for easier handling;
+and latitude and longitude added as separate floating-point attributes
+by splitting the permit location.
+
+Importantly, all string values were set to lowercase with the aim of
+simplifying comparisons between tuples in the dataset and with tuples in
+external datasets employed for missing value imputation and error
+correction. In these specific cases, further normalisation was performed
+to facilitate string matching (e.g. punctuation removal), but it was
+deemed that applying further normalisation to the entire dataset would
+excessively modify the underlying data.
+
+Finally, placeholders for missing values found during preliminary analysis (e.g. "unknown" and "situs to be assigned" for the street name)
+were set to missing
+^[This was done by assigning `pd.NA` to these values. \label{foot:na}].
+
 # Data Analysis
 
 <!--
