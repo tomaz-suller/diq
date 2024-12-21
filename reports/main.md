@@ -1,19 +1,19 @@
 ---
-title: Data Cleaning and Analysis over the San Francisco
+title: Data Cleaning and Analysis over the San Francisco Building Permits Dataset
 author:
+- Federica
+- Satvik
 - Tomaz Maia Suller, 10987566
-- Foo
-- Bar
 abstract: |
     The abstract goes here in case we decide to add one.
 header-includes:
 - \usepackage[toc, page]{appendix}
+include-before: |
+    |                |                        |
+    |----------------|------------------------|
+    | **Project ID** | 67                     |
+    | **Dataset ID** | 6                      |
 ...
-
-|                |                        |
-|----------------|------------------------|
-| **Project ID** |                        |
-| **Dataset**    |                        |
 
 <!--
 
