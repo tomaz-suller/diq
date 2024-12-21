@@ -9,10 +9,10 @@ abstract: |
 header-includes:
 - \usepackage[toc, page]{appendix}
 include-before: |
-    |                |                        |
-    |----------------|------------------------|
-    | **Project ID** | 67                     |
-    | **Dataset ID** | 6                      |
+    |               |       |
+    |---------------|-------|
+    | Project ID    | 67    |
+    | Dataset ID    | 6     |
 ...
 
 <!--
