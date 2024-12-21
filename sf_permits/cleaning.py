@@ -267,9 +267,9 @@ def fix_street_name_spelling(df: pd.DataFrame) -> pd.DataFrame:
             street_name_direction_match_df["index"],
         ]
     ).unique()
-    logger.info("{} street names match exactly", len(match_indices))
+    logger.debug("{} street names match exactly", len(match_indices))
     non_match_indices = df.index.difference(match_indices)
-    logger.info("{} street names did not match exactly", len(non_match_indices))
+    logger.debug("{} street names did not match exactly", len(non_match_indices))
     # Streets which are not matched are assumed to be incorrectly spelled
     # so we use string similarity to match them
     wrong_street_names = street_names.loc[non_match_indices]
