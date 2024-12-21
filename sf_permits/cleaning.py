@@ -324,7 +324,7 @@ def main(
     logger.debug("Loading from {}", input_path)
     raw_df = pd.read_csv(input_path)
     logger.debug("Initial data has shape {}", raw_df.shape)
-    # We start from deleting completely empty rows
+    # We start by deleting completely empty rows
     clean_df = raw_df.dropna(how="all", axis="index")
     logger.debug("Shape after dropping empty rows is {}", clean_df.shape)
 
@@ -410,15 +410,21 @@ def main(
     report_missing_value_count(clean_df)
 
     logger.success("Error correction complete")
+    logger.info("Starting outlier detection")
     # Outlier detection
     # TODO
+    logger.warning("Outlier detection not yet implemented")
 
+    logger.success("Outlier detection complete")
+    logger.info("Starting duplicate removal")
     # Duplicate removal
     clean_df = drop_duplicate_position_permits(clean_df)
 
+    logger.success("Duplicate removal complete")
+
     logger.success("Data cleaning complete")
-    logger.info("Saving cleaned data")
-    logger.debug("Saving to {}", output_path)
+    logger.info("Saving clean data")
+    logger.debug("Saving clean data to {}", output_path)
     clean_df.to_parquet(output_path)
     logger.success("Saved clean data")
 
