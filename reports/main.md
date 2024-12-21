@@ -37,7 +37,7 @@ Instructions
 
 # Introduction
 
-The remained of this report is organised as follows:
+The remainder of this report is organised as follows:
 Section \ref{profiling} describes preliminary analysis approaches
 employed to assess the quality of the dataset and to direct points for
 improvement;
