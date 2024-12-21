@@ -1,26 +1,30 @@
-import warnings
+from collections import defaultdict
 from pathlib import Path
+from string import punctuation
+import warnings
 
-import pandas as pd
 import geopandas as gpd
-import typer
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
+import typer
 
 from sf_permits.config import (
-    logger,
-    RAW_DATASET_PATH,
     INTERIM_DATASET_PATH,
     NEIGHBOURHOOD_SHAPEFILE_PATH,
+    RAW_DATASET_PATH,
+    STREET_NAMES_PATH,
     ZIP_CODE_SHAPEFILE_PATH,
+    logger,
+)
+from sf_permits.utils.string_similarity import (
+    get_matching_strings,
+    jaccard,
+    jaro_winkler,
 )
 
 app = typer.Typer()
 
-STREET_SUFFIX_MAP = {
-    "av": ["avenue", "ave"],
-    "wy": ["via"],
-    "bl": ["blvd"],
-}
 MISSING_AS_FALSE_COLUMNS = [
     "Fire Only Permit",
     "Structural Notification",
@@ -39,6 +43,152 @@ DUPLICATE_IDENTIFIERS = [
     "Unit",
     "Unit Suffix",
 ]
+PUNCTUATION_REGEX = r"[{}]".format(punctuation)
+STREET_NAME_JACCARD_SIMILARITY_THRESHOLD = 0.32
+STREET_NAME_JACCARD_JARO_SIMILARITY_THRESHOLD = 0.70
+STREET_NAME_DIRECT_JARO_SIMILARITY_THRESHOLD = 0.93
+STREET_NAME_REVERSE_JARO_SIMILARITY_THRESHOLD = 0.89
+
+
+def street_names_similar(base: str, target: str) -> bool:
+    return (
+        jaccard(base, target, normalise=False) >= 1
+        and jaro_winkler(base, target) > STREET_NAME_JACCARD_JARO_SIMILARITY_THRESHOLD
+    ) or (
+        jaro_winkler(base, target) > STREET_NAME_DIRECT_JARO_SIMILARITY_THRESHOLD
+        and jaro_winkler(base[::-1], target[::-1])
+        > STREET_NAME_REVERSE_JARO_SIMILARITY_THRESHOLD
+    )
+
+
+def fix_street_name_spelling(df: pd.DataFrame) -> pd.DataFrame:
+    street_names = df["Street Name"].str.replace(PUNCTUATION_REGEX, "", regex=True)
+
+    logger.debug("Loading external street names from {}", STREET_NAMES_PATH)
+    external_street_df = string_to_lower_case(pd.read_csv(STREET_NAMES_PATH).convert_dtypes())
+    normalised_external_street_df = external_street_df.copy()
+    for string_column in normalised_external_street_df.select_dtypes("string"):
+        normalised_external_street_df[string_column] = normalised_external_street_df[
+            string_column
+        ].str.replace(PUNCTUATION_REGEX, "", regex=True)
+    # Python cannot infer the type, so we add the type hint
+    normalised_external_street_df: pd.DataFrame
+
+    normalised_external_street_df["StreetNameDirection"] = (
+        normalised_external_street_df["StreetName"]
+        + " "
+        + normalised_external_street_df["PostDirection"].fillna("")
+    )
+
+    # Match external names with existing ones
+    # based on the full street name (name, type and direction)...
+    full_name_match_df = normalised_external_street_df.reset_index(
+        names="base_index"
+    ).merge(
+        street_names.reset_index(), left_on="FullStreetName", right_on="Street Name"
+    )
+    # ... only the street name...
+    street_name_match_df = normalised_external_street_df.reset_index(
+        names="base_index"
+    ).merge(street_names.reset_index(), left_on="StreetName", right_on="Street Name")
+    # ... and the street name with direction
+    street_name_direction_match_df = normalised_external_street_df.reset_index(
+        names="base_index"
+    ).merge(
+        street_names.reset_index(),
+        left_on="StreetNameDirection",
+        right_on="Street Name",
+    )
+    match_indices = pd.concat(
+        [
+            full_name_match_df["index"],
+            street_name_match_df["index"],
+            street_name_direction_match_df["index"],
+        ]
+    ).unique()
+    logger.info("{} street names match exactly", len(match_indices))
+    non_match_indices = df.index.difference(match_indices)
+    logger.info("{} street names did not match exactly", len(non_match_indices))
+    # Streets which are not matched are assumed to be incorrectly spelled
+    # so we use string similarity to match them
+    wrong_street_names = street_names.loc[non_match_indices]
+
+    # Dataset street names mix name and direction,
+    # so we concatenate them in the external dataset before comparing
+    external_street_names = (
+        normalised_external_street_df["StreetName"]
+        + " "
+        + normalised_external_street_df["PostDirection"].fillna("")
+    ).str.strip()
+
+    logger.debug("Matching street names with string similarity")
+    matching_indices, _ = get_matching_strings(
+        external_street_names,
+        wrong_street_names,
+        street_names_similar,
+        block_length=0,
+    )
+
+    for match_df in (
+        full_name_match_df,
+        street_name_direction_match_df,
+        street_name_match_df,
+    ):
+        for base_index, index in match_df[["base_index", "index"]].itertuples(
+            index=False
+        ):
+            try:
+                matching_indices[base_index].append(index)
+            except KeyError:
+                matching_indices[base_index] = [index]
+
+    # We build matches as a map from base index to target index
+    # so we need to reverse it before continuing
+    reversed_matching_indices = defaultdict(list)
+    for base_index, target_indices in matching_indices.items():
+        for target_index in target_indices:
+            reversed_matching_indices[target_index].append(base_index)
+
+    # Each target may be matched to multiple base indices
+    # so we only keep the one with the highest similarity
+    unique_reversed_matching_indices: dict[int, int] = {}
+    for target_index, base_indices in reversed_matching_indices.items():
+        # Skip computing similarity if there is only one base index
+        if len(base_indices) == 1:
+            unique_reversed_matching_indices[target_index] = base_indices[0]
+            continue
+        jaro_similarities = [
+            jaro_winkler(
+                external_street_names.loc[base_index],
+                street_names.loc[target_index],
+            )
+            for base_index in base_indices
+        ]
+        unique_reversed_matching_indices[target_index] = base_indices[
+            np.argmax(jaro_similarities)
+        ]
+
+    final_match_df = (
+        pd.Series(unique_reversed_matching_indices, name="base_index")
+        .reset_index()
+        .rename(columns={"index": "target_index"})
+    )
+
+    # Once we have all the matches, we replace the values of
+    # `Street Name` and `Street Type` with those from the
+    # external dataset
+    clean_street_df = final_match_df.join(
+        external_street_df[["StreetName", "StreetType"]], on="base_index"
+    ).join(df, on="target_index", how="right")
+    clean_street_df["Street Name"] = clean_street_df["StreetName"].combine_first(
+        clean_street_df["Street Name"]
+    )
+    clean_street_df["Street Suffix"] = clean_street_df["StreetType"].combine_first(
+        clean_street_df["Street Suffix"]
+    )
+    clean_street_df = clean_street_df.drop(columns=["StreetName", "StreetType"])
+
+    return clean_street_df
 
 
 def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
@@ -52,30 +202,6 @@ def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
     df["latitude"] = coordinates[0]
     df["longitude"] = coordinates[1]
     return df
-
-
-def remove_street_suffix_from_name(df: pd.DataFrame) -> pd.DataFrame:
-    for index, street_name in tqdm(
-        df["Street Name"].items(), total=df.shape[0], desc="Street"
-    ):
-        street_name: str
-
-        if not pd.isna(df.loc[index, "Street Suffix"]):
-            continue
-
-        logger.debug(
-            "Index {} and street name '{}' has null suffix", index, street_name
-        )
-        for suffix, aliases in STREET_SUFFIX_MAP.items():
-            for alias in aliases:
-                if alias in street_name:
-                    logger.debug("Street name matches alias '{}'", alias)
-                    df.loc[index, "Street Suffix"] = suffix
-                    df.loc[index, "Street Name"] = (
-                        street_name.replace(alias, "").replace("  ", " ").strip()
-                    )
-
-        return df
 
 
 def assign_na_to_missing_street_name(df: pd.DataFrame) -> pd.DataFrame:
@@ -208,7 +334,6 @@ def main(
     clean_df = decode_coordinates(clean_df)
     clean_df = string_to_lower_case(clean_df)
     clean_df = rename_columns(clean_df)
-    clean_df = remove_street_suffix_from_name(clean_df)
     clean_df = assign_na_to_missing_street_name(clean_df)
     clean_df = string_to_datetime(clean_df)
 
@@ -233,6 +358,10 @@ def main(
         ZIP_CODE_SHAPEFILE_PATH, columns=["zip"]
     )
     clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
+
+    # ## Using external street name data
+    logger.info("Matching street names")
+    clean_df = fix_street_name_spelling(clean_df)
 
     logger.success("Error correction complete")
     logger.info("Starting missing value imputation")
