@@ -206,6 +206,28 @@ missing^[See Footnote \ref{foot:na}.].
 
 ## Missing Value Imputation
 
+### Location-based Imputation
+Intuitively, approximate functional dependencies should hold between
+hierarchical location elements: a specific block and lot correspond
+to a single street, which corresponds (usually) to a single supervisor
+district and to a single neighbourhood. These domain-based relationships
+enable us to impute values in tuples iteratively, following the described
+hierarchy.
+
+In this case, it was decided that imputation would be performed first by
+block and lot, and then by street name. No further elements in the
+hierarchy were considered since they were deemed possibly too distant to
+provide useful data for imputation.
+
+For both block and lot and for street name, a similar imputation
+procedure was performed: `latitude` and `longitude` were imputed by
+taking the mean over tuples with the same grouping key (either block and
+lot or street name), and `Street Name`, `Street Suffix` and
+`Supervisor District`, by taking the mode.
+Neither `Neighborhood` nor `Zipcode` were imputed since the imputed
+coordinates were used to match them to external datasets as described in
+Section \ref{location-based-error-correction}.
+
 ## Outlier Detection and Removal
 
 ## Duplicate Detection and Removal
