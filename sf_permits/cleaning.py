@@ -144,7 +144,11 @@ def main(
     clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
     report_missing_value_count(clean_df)
 
-    logger.success("Error correction complete")
+    # ## Exploit approximate functional dependency between `Neighborhood` and `Supervisor District`
+    clean_df = fill_district_based_on_neighbourhood(clean_df)
+    report_missing_value_count(clean_df)
+
+    logger.success("Missing value imputation complete")
     logger.info("Starting outlier detection")
     # Outlier detection
     # TODO
@@ -206,6 +210,23 @@ def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["latitude"] = coordinates[0]
     df["longitude"] = coordinates[1]
+    return df
+
+
+def fill_district_based_on_neighbourhood(df: pd.DataFrame) -> pd.DataFrame:
+    neighbourhood_district_records = (
+        df[["Neighborhood", "Supervisor District"]]
+        .dropna()
+        .drop_duplicates("Neighborhood")  # Keep only a single neighbourhood per district
+        .to_dict("records")
+    )
+    neighbourhood_district_map = {
+        record["Neighborhood"]: record["Supervisor District"]
+        for record in neighbourhood_district_records
+    }
+    for neighbourhood, district in neighbourhood_district_map.items():
+        df.loc[df["Neighborhood"] == neighbourhood, "Supervisor District"] = district
+        df.loc[df["Supervisor District"] == district, "Neighborhood"] = neighbourhood
     return df
 
 
