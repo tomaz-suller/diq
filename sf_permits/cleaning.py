@@ -50,6 +50,165 @@ STREET_NAME_DIRECT_JARO_SIMILARITY_THRESHOLD = 0.93
 STREET_NAME_REVERSE_JARO_SIMILARITY_THRESHOLD = 0.89
 
 
+@app.command()
+def main(
+    input_path: Path = RAW_DATASET_PATH,
+    output_path: Path = INTERIM_DATASET_PATH,
+):
+    logger.info("Starting data cleaning")
+    logger.debug("Loading from {}", input_path)
+    raw_df = pd.read_csv(input_path)
+    logger.debug("Initial data has shape {}", raw_df.shape)
+    # We start by deleting completely empty rows
+    clean_df = raw_df.dropna(how="all", axis="index")
+    logger.debug("Shape after dropping empty rows is {}", clean_df.shape)
+
+    logger.info("Starting normalisation")
+    # # Normalisation
+    clean_df = clean_df.convert_dtypes()
+    clean_df = decode_coordinates(clean_df)
+    clean_df = string_to_lower_case(clean_df)
+    clean_df = rename_columns(clean_df)
+    clean_df = assign_na_to_missing_street_name(clean_df)
+    clean_df = string_to_datetime(clean_df)
+
+    logger.success("Normalisation complete")
+    logger.info("Starting error correction")
+    # # Error correction
+
+    # Some permits are not assigned the "Complete" status yet
+    # are assigned a completion date
+    # We treat these as errors and so assign NA to them
+    clean_df = assign_na_completion_to_incomplete_permit(clean_df)
+
+    # ## Using external location-based data
+    neighbourhood_gdf: gpd.GeoDataFrame = gpd.read_file(NEIGHBOURHOOD_SHAPEFILE_PATH)
+    logger.info("Matching neighbourhood geometries")
+    clean_df = replace_matching_geometry_values(
+        clean_df, "Neighborhood", neighbourhood_gdf
+    )
+
+    logger.info("Matching zipcode geometries")
+    zipcode_gdf: gpd.GeoDataFrame = gpd.read_file(
+        ZIP_CODE_SHAPEFILE_PATH, columns=["zip"]
+    )
+    clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
+
+    # ## Using external street name data
+    logger.info("Matching street names")
+    clean_df = fix_street_name_spelling(clean_df)
+
+    logger.success("Error correction complete")
+    logger.info("Starting missing value imputation")
+    # # Missing value imputation
+    report_missing_value_count(clean_df)
+
+    clean_df = string_to_boolean(clean_df)
+    report_missing_value_count(clean_df)
+
+    # ## Fill location using `Block` and `Lot`
+    logger.info("Imputing based on block and lot")
+    clean_df = impute_group(
+        clean_df,
+        ["Block", "Lot"],
+        mean_columns=("latitude", "longitude"),
+        mode_columns=(
+            "Street Name",
+            "Street Suffix",
+            "Supervisor District",
+        ),
+    )
+    report_missing_value_count(clean_df)
+
+    # ## Fill location using `Street Name`
+    logger.info("Imputing based on street name")
+    clean_df = impute_group(
+        clean_df,
+        "Street Name",
+        mean_columns=("latitude", "longitude"),
+        mode_columns=(
+            "Street Suffix",
+            "Supervisor District",
+        ),
+    )
+    report_missing_value_count(clean_df)
+
+    # After imputing the location, we are able to use it to correct
+    # and impute `Neighborhood` and `Zipcode` as we did before
+    # so we apply the same function we did for error correction again
+    logger.info("Reapplying neighbourhood matching")
+    clean_df = replace_matching_geometry_values(
+        clean_df, "Neighborhood", neighbourhood_gdf
+    )
+    logger.info("Reapplying zipcode matching")
+    clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
+    report_missing_value_count(clean_df)
+
+    logger.success("Error correction complete")
+    logger.info("Starting outlier detection")
+    # Outlier detection
+    # TODO
+    logger.warning("Outlier detection not yet implemented")
+
+    logger.success("Outlier detection complete")
+    logger.info("Starting duplicate removal")
+    # Duplicate removal
+    clean_df = drop_duplicate_position_permits(clean_df)
+
+    logger.success("Duplicate removal complete")
+
+    logger.success("Data cleaning complete")
+    logger.info("Saving clean data")
+    logger.debug("Saving clean data to {}", output_path)
+    clean_df.to_parquet(output_path)
+    logger.success("Saved clean data")
+
+
+def report_missing_value_count(df: pd.DataFrame) -> None:
+    logger.debug("Missing value count \n{}", df.isna().sum())
+
+
+def string_to_boolean(df: pd.DataFrame) -> pd.DataFrame:
+    for column in MISSING_AS_FALSE_COLUMNS:
+        df[column] = df[column].map({"Y": True, pd.NA: False}).astype("bool")
+    return df
+
+
+def drop_duplicate_position_permits(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop_duplicates(subset=DUPLICATE_IDENTIFIERS)
+
+
+def assign_na_to_missing_street_name(df: pd.DataFrame) -> pd.DataFrame:
+    df[df["Street Name"].isin(MISSING_STREET_NAME)] = pd.NA
+    return df
+
+
+def assign_na_completion_to_incomplete_permit(df: pd.DataFrame) -> pd.DataFrame:
+    df.loc[df["Current Status"] != "complete", "Completed Date"] = pd.NA
+    return df
+
+
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    return df.rename(
+        columns={
+            "Neighborhoods - Analysis Boundaries": "Neighborhood",
+        }
+    )
+
+
+def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
+    coordinates = (
+        df["Location"]
+        .str.replace("(", "")
+        .str.replace(")", "")
+        .str.split(",", expand=True)
+        .astype("float")
+    )
+    df["latitude"] = coordinates[0]
+    df["longitude"] = coordinates[1]
+    return df
+
+
 def street_names_similar(base: str, target: str) -> bool:
     return (
         jaccard(base, target, normalise=False) >= 1
@@ -65,7 +224,9 @@ def fix_street_name_spelling(df: pd.DataFrame) -> pd.DataFrame:
     street_names = df["Street Name"].str.replace(PUNCTUATION_REGEX, "", regex=True)
 
     logger.debug("Loading external street names from {}", STREET_NAMES_PATH)
-    external_street_df = string_to_lower_case(pd.read_csv(STREET_NAMES_PATH).convert_dtypes())
+    external_street_df = string_to_lower_case(
+        pd.read_csv(STREET_NAMES_PATH).convert_dtypes()
+    )
     normalised_external_street_df = external_street_df.copy()
     for string_column in normalised_external_street_df.select_dtypes("string"):
         normalised_external_street_df[string_column] = normalised_external_street_df[
@@ -191,41 +352,15 @@ def fix_street_name_spelling(df: pd.DataFrame) -> pd.DataFrame:
     return clean_street_df
 
 
-def decode_coordinates(df: pd.DataFrame) -> pd.DataFrame:
-    coordinates = (
-        df["Location"]
-        .str.replace("(", "")
-        .str.replace(")", "")
-        .str.split(",", expand=True)
-        .astype("float")
-    )
-    df["latitude"] = coordinates[0]
-    df["longitude"] = coordinates[1]
+def replace_matching_geometry_values(
+    df: pd.DataFrame, column: str, base: gpd.GeoDataFrame
+) -> pd.DataFrame:
+    geometry = gpd.GeoSeries.from_xy(df["longitude"], df["latitude"])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
+        match_df = match(base, geometry)
+    df[column] = match_df.iloc[:, 0].combine_first(df[column]).str.lower()
     return df
-
-
-def assign_na_to_missing_street_name(df: pd.DataFrame) -> pd.DataFrame:
-    df[df["Street Name"].isin(MISSING_STREET_NAME)] = pd.NA
-    return df
-
-
-def assign_na_completion_to_incomplete_permit(df: pd.DataFrame) -> pd.DataFrame:
-    df.loc[df["Current Status"] != "complete", "Completed Date"] = pd.NA
-    return df
-
-
-def string_to_lower_case(df: pd.DataFrame) -> pd.DataFrame:
-    for string_column in df.select_dtypes("string"):
-        df[string_column] = df[string_column].str.lower()
-    return df
-
-
-def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
-    return df.rename(
-        columns={
-            "Neighborhoods - Analysis Boundaries": "Neighborhood",
-        }
-    )
 
 
 def match(base: gpd.GeoDataFrame, target: gpd.GeoSeries) -> pd.DataFrame:
@@ -242,32 +377,6 @@ def match(base: gpd.GeoDataFrame, target: gpd.GeoSeries) -> pd.DataFrame:
     ):
         match_df[id_] = target.within(geometry)
     return pd.from_dummies(match_df, default_category=pd.NA)
-
-
-def replace_matching_geometry_values(
-    df: pd.DataFrame, column: str, base: gpd.GeoDataFrame
-) -> pd.DataFrame:
-    geometry = gpd.GeoSeries.from_xy(df["longitude"], df["latitude"])
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
-        match_df = match(base, geometry)
-    df[column] = match_df.iloc[:, 0].combine_first(df[column]).str.lower()
-    return df
-
-
-def impute(
-    df: pd.DataFrame, mean_columns: list[str] = [], mode_columns: list[str] = []
-) -> pd.DataFrame:
-    imputed_df = df.copy()
-    for column in mean_columns:
-        imputed_df.loc[:, column] = imputed_df[column].fillna(
-            imputed_df[column].mean(skipna=True)
-        )
-    for column in mode_columns:
-        imputed_df.loc[:, column] = imputed_df[column].fillna(
-            imputed_df[column].mode(dropna=True)
-        )
-    return imputed_df
 
 
 def impute_group(
@@ -287,6 +396,21 @@ def impute_group(
     return group_df
 
 
+def impute(
+    df: pd.DataFrame, mean_columns: list[str] = [], mode_columns: list[str] = []
+) -> pd.DataFrame:
+    imputed_df = df.copy()
+    for column in mean_columns:
+        imputed_df.loc[:, column] = imputed_df[column].fillna(
+            imputed_df[column].mean(skipna=True)
+        )
+    for column in mode_columns:
+        imputed_df.loc[:, column] = imputed_df[column].fillna(
+            imputed_df[column].mode(dropna=True)
+        )
+    return imputed_df
+
+
 def string_to_datetime(
     df: pd.DataFrame,
     like: str = "Date",
@@ -301,132 +425,10 @@ def string_to_datetime(
     return df
 
 
-def string_to_boolean(df: pd.DataFrame) -> pd.DataFrame:
-    for column in MISSING_AS_FALSE_COLUMNS:
-        df[column] = df[column].map({"Y": True, pd.NA: False}).astype("bool")
+def string_to_lower_case(df: pd.DataFrame) -> pd.DataFrame:
+    for string_column in df.select_dtypes("string"):
+        df[string_column] = df[string_column].str.lower()
     return df
-
-
-def report_missing_value_count(df: pd.DataFrame) -> None:
-    logger.debug("Missing value count \n{}", df.isna().sum())
-
-
-def drop_duplicate_position_permits(df: pd.DataFrame) -> pd.DataFrame:
-    return df.drop_duplicates(subset=DUPLICATE_IDENTIFIERS)
-
-
-@app.command()
-def main(
-    input_path: Path = RAW_DATASET_PATH,
-    output_path: Path = INTERIM_DATASET_PATH,
-):
-    logger.info("Starting data cleaning")
-    logger.debug("Loading from {}", input_path)
-    raw_df = pd.read_csv(input_path)
-    logger.debug("Initial data has shape {}", raw_df.shape)
-    # We start by deleting completely empty rows
-    clean_df = raw_df.dropna(how="all", axis="index")
-    logger.debug("Shape after dropping empty rows is {}", clean_df.shape)
-
-    logger.info("Starting normalisation")
-    # # Normalisation
-    clean_df = clean_df.convert_dtypes()
-    clean_df = decode_coordinates(clean_df)
-    clean_df = string_to_lower_case(clean_df)
-    clean_df = rename_columns(clean_df)
-    clean_df = assign_na_to_missing_street_name(clean_df)
-    clean_df = string_to_datetime(clean_df)
-
-    logger.success("Normalisation complete")
-    logger.info("Starting error correction")
-    # # Error correction
-
-    # Some permits are not assigned the "Complete" status yet
-    # are assigned a completion date
-    # We treat these as errors and so assign NA to them
-    clean_df = assign_na_completion_to_incomplete_permit(clean_df)
-
-    # ## Using external location-based data
-    neighbourhood_gdf: gpd.GeoDataFrame = gpd.read_file(NEIGHBOURHOOD_SHAPEFILE_PATH)
-    logger.info("Matching neighbourhood geometries")
-    clean_df = replace_matching_geometry_values(
-        clean_df, "Neighborhood", neighbourhood_gdf
-    )
-
-    logger.info("Matching zipcode geometries")
-    zipcode_gdf: gpd.GeoDataFrame = gpd.read_file(
-        ZIP_CODE_SHAPEFILE_PATH, columns=["zip"]
-    )
-    clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
-
-    # ## Using external street name data
-    logger.info("Matching street names")
-    clean_df = fix_street_name_spelling(clean_df)
-
-    logger.success("Error correction complete")
-    logger.info("Starting missing value imputation")
-    # # Missing value imputation
-    report_missing_value_count(clean_df)
-
-    clean_df = string_to_boolean(clean_df)
-    report_missing_value_count(clean_df)
-
-    # ## Fill location using `Block` and `Lot`
-    logger.info("Imputing based on block and lot")
-    clean_df = impute_group(
-        clean_df,
-        ["Block", "Lot"],
-        mean_columns=("latitude", "longitude"),
-        mode_columns=(
-            "Street Name",
-            "Street Suffix",
-            "Supervisor District",
-        ),
-    )
-    report_missing_value_count(clean_df)
-
-    # ## Fill location using `Street Name`
-    logger.info("Imputing based on street name")
-    clean_df = impute_group(
-        clean_df,
-        "Street Name",
-        mean_columns=("latitude", "longitude"),
-        mode_columns=(
-            "Street Suffix",
-            "Supervisor District",
-        ),
-    )
-    report_missing_value_count(clean_df)
-
-    # After imputing the location, we are able to use it to correct
-    # and impute `Neighborhood` and `Zipcode` as we did before
-    # so we apply the same function we did for error correction again
-    logger.info("Reapplying neighbourhood matching")
-    clean_df = replace_matching_geometry_values(
-        clean_df, "Neighborhood", neighbourhood_gdf
-    )
-    logger.info("Reapplying zipcode matching")
-    clean_df = replace_matching_geometry_values(clean_df, "Zipcode", zipcode_gdf)
-    report_missing_value_count(clean_df)
-
-    logger.success("Error correction complete")
-    logger.info("Starting outlier detection")
-    # Outlier detection
-    # TODO
-    logger.warning("Outlier detection not yet implemented")
-
-    logger.success("Outlier detection complete")
-    logger.info("Starting duplicate removal")
-    # Duplicate removal
-    clean_df = drop_duplicate_position_permits(clean_df)
-
-    logger.success("Duplicate removal complete")
-
-    logger.success("Data cleaning complete")
-    logger.info("Saving clean data")
-    logger.debug("Saving clean data to {}", output_path)
-    clean_df.to_parquet(output_path)
-    logger.success("Saved clean data")
 
 
 if __name__ == "__main__":
