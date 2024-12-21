@@ -45,7 +45,8 @@ these points are addressed by data cleaning techniques described
 in Section \ref{data-cleaning}.
 Finally, Section \ref{data-analysis} describes the selected machine
 learning problem under investigation, as well as further data preparation
-steps specifically required by the employed model.
+steps specifically required by the employed model and the results of the
+analysis.
 
 # Data Profiling and Quality Assessment {#profiling}
 
