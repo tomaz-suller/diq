@@ -100,7 +100,28 @@ by geospatial matching, considering a maximum distance between matching
 tuples, or other geometric relationships (e.g. if the geometry of a
 tuple is within the geometry of another).
 
-### Remaining Error Correction
+Error correction was performed assuming location information is always
+accurate, that is, inconsistencies between geospatial ground-truth
+external data and some attribute would imply an error in the attribute
+and not in the location.
+
+#### Neighbourhood correction
+An external
+dataset^[<https://data.sfgov.org/-/Analysis-Neighborhoods/j2bu-swwd/>]
+made available by the San Francisco Office of the City Administrator
+provides non-overlapping geospatial boundaries associated with each
+neighbourhood in the city of San Francisco. The `Neighborhood` value of
+each tuple was therefore replaced with their associated coordinate
+values.
+
+#### ZIP code correction
+Analogously, a second external
+dataset^[<https://data.sfgov.org/dataset/Bay-Area-ZIP-Codes/4kz9-76pb/>]
+made available by the San Francisco Office of the City Administrator
+provides boundaries for regions associated with the same ZIP code, whose
+value was used to replace the ZIP code of each tuple based on its
+coordinates.
+
 
 #### Non-complete permits with completion date
 Only permits whose status is "Complete" should be associated with a
