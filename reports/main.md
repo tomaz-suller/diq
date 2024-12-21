@@ -39,8 +39,8 @@ Instructions
 
 The remainder of this report is organised as follows:
 Section \ref{profiling} describes preliminary analysis approaches
-employed to assess the quality of the dataset and to direct points for
-improvement;
+employed to assess the quality of the permits dataset and to direct
+points for improvement;
 these points are addressed by data cleaning techniques described
 in Section \ref{data-cleaning}.
 Finally, Section \ref{data-analysis} describes the selected machine
@@ -75,26 +75,27 @@ and latitude and longitude added as separate floating-point attributes
 by splitting the permit location.
 
 Importantly, all string values were set to lowercase with the aim of
-simplifying comparisons between tuples in the dataset and with tuples in
-external datasets employed for missing value imputation and error
-correction. In these specific cases, further normalisation was performed
-to facilitate string matching (e.g. punctuation removal), but it was
-deemed that applying further normalisation to the entire dataset would
-excessively modify the underlying data.
+simplifying comparisons between tuples in the permits dataset and with
+tuples in external datasets employed for missing value imputation and
+error correction. In these specific cases, further normalisation was
+performed to facilitate string matching (e.g. punctuation removal), but
+it was deemed that applying further normalisation to the entire dataset
+would excessively modify the underlying data.
 
 Furthermore, placeholders for missing values found during preliminary analysis (e.g. "unknown" and "situs to be assigned" for `Street Name`)
 were set to
-missing^[This was done by assigning `pd.NA` to these values. \label{foot:na}].
+missing^[This was done by assigning `pd.NA` to these values.
+\label{foot:na}].
 
 ## Error Correction
-Various errors were discovered in the dataset during manual data
+Various errors were discovered in the permits dataset during manual data
 exploration and analysis of the profiling metrics computed as
 described in Section \ref{profiling}.
 
 ### Location-based Error Correction
-The presence of geospatial attributes in the dataset provides an
+The presence of geospatial attributes in the permits dataset provides an
 opportunity to match ground-truth external dataset tuples with those
-from the dataset using their coordinates as matching key.
+from the permits dataset using their coordinates as matching key.
 Matching may be performed not only by exact value matching, but also
 by geospatial matching, considering a maximum distance between matching
 tuples, or other geometric relationships (e.g. if the geometry of a
