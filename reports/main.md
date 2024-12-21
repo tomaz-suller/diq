@@ -38,9 +38,16 @@ Instructions
 # Introduction
 
 The remained of this report is organised as follows:
-Section \ref{app:a}
+Section \ref{profiling} describes preliminary analysis approaches
+employed to assess the quality of the dataset and to direct points for
+improvement;
+these points are addressed by data cleaning techniques described
+in Section \ref{data-cleaning}.
+Finally, Section \ref{data-analysis} describes the selected machine
+learning problem under investigation, as well as further data preparation
+steps specifically required by the employed model.
 
-# Data Profiling and Quality Assessment {#sec:profiling}
+# Data Profiling and Quality Assessment {#profiling}
 
 # Data Cleaning
 
