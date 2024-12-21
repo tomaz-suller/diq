@@ -74,6 +74,29 @@ Finally, placeholders for missing values found during preliminary analysis (e.g.
 were set to missing
 ^[This was done by assigning `pd.NA` to these values. \label{foot:na}].
 
+## Error Correction
+Various errors were discovered in the dataset during manual data
+exploration and analysis of the profiling metrics computed as
+described in Section \ref{profiling}.
+
+### Location-based Error Correction
+The presence of geospatial attributes in the dataset provides an
+opportunity to match ground-truth external dataset tuples with those
+from the dataset using their coordinates as matching key.
+Matching may be performed not only by exact value matching, but also
+by geospatial matching, considering a maximum distance between matching
+tuples, or other geometric relationships (e.g. if the geometry of a
+tuple is within the geometry of another).
+
+### Remaining Error Correction
+
+#### Non-complete permits with completion date
+Only permits whose status is "Complete" should be associated with a
+completion date, yet so are permits with different statuses.
+These values were deemed errors, and the completion date for permits with
+a status different from "Complete" were set to missing
+^[See Footnote \ref{foot:na}.].
+
 # Data Analysis
 
 <!--
