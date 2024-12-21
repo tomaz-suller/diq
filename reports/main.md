@@ -123,6 +123,79 @@ provides boundaries for regions associated with the same ZIP code, whose
 value was used to replace the ZIP code of each tuple based on its
 coordinates.
 
+### String-based Error Correction
+String attributes are prone to errors due to typos which need to be
+corrected. Given the replacement of neighbourhoods with their
+ground-truth equivalents, the `Street Name` attribute required
+special treatment.
+
+A ground-truth external
+dataset^[<https://data.sfgov.org/Geographic-Locations-and-Boundaries/Street-Names/6d9h-4u5v/>]
+made available by San Francisco Public Works
+provided full street names and their respective components (name, type,
+and post direction) which were matched with tuples in the permits
+dataset, whose values were then replaced with those provided by the
+ground-truth data.
+
+Matching was performed in two stages.
+First, exact matches between the external dataset and the permits dataset
+were computed by considering normalised street names, lower-case and with
+all punctuation removed. Matches were computed between the permit dataset
+`Street Name` attribute and the `FullStreetName`, `StreetName` and the concatenation of the `StreetName` and `Post Direction` attributes in the
+external dataset to ensure as many exact matches would be found during
+the initial matching stage.
+In total, 197743 matches were found, leaving 1157 tuples unmatched.
+
+Second, approximate matches were computed between the external dataset
+and the 1157 unmatched tuples from initial matching. To that end, a
+hybrid similarity measure was used, combining Jaro-Winkler and a
+Jaccard-like similarity in two components. This approach resulted in
+992 further matches, leaving 165 unmatched and so unmodified.
+
+Formally, two strings $x, y$ are said to _match_ if $m(x, y)$ evaluates
+to a logical true value, with
+\begin{subequations}
+\begin{align}
+m(x, y)     &= m_1(x, y) \lor m_2(x, y) & \\
+m_1(x, y)   &= (| x \cap y | \ge 1)     \land (sim_j(x, y) > \alpha)    \label{eq:sim:1} \\
+m_2(x, y)   &= (sim_j(x, y) > \beta_1)  \land (sim_j(-x, -y) > \beta_2) \label{eq:sim:2}
+\end{align}
+\end{subequations}
+in which, $x \cap y$ returns the set of words contained in both $x$ and
+$y$, $sim_j$ is the Jaro-Winkler similarity measure, and given a
+sequence $x = (x_1, \dots, x_m)$ of characters, we denote its reverse
+sequence by $-x = (x_m, \dots, x_1)$.
+
+The intuition behind this definition is the following:
+$m_1$ matches strings which have at least one word in common, which
+allows us to reduce the Jaro-Winkler similarity threshold $\alpha$
+without making wrong associations. This component aims to match
+strings with significantly different content (e.g. "embarcadero center"
+and "the embarcadero") but still share an (ideally) meaningful word
+between them^[This idea could be further extended adding TF-IDF weights
+to each word, but the resulting matches were deemed sufficiently accurate
+to go without this addition.]
+$m_2$ matches strings which are similar and have both similar prefixes
+and suffixes. Given the similarity bonus provided by Jaro-Winkler
+to strings with matching prefixes, analysing only the direct sequence
+proved to inaccurately match strings with identical prefixes prefixes
+(e.g. "lake merced hill so" and "lake merced hill no"), so an additional
+similarity threshold was introduced on the reverse sequence to also
+account for the suffix.
+Similarity thresholds $\alpha = 0.7$, $\beta_1 = 0.93$ and
+$\beta_2 = 0.89$ were empirically tuned to balance coverage and
+accuracy.
+
+To generate a bijective map between permit and external dataset tuples,
+in case a street name from the permit dataset matched multiple
+street names from the external dataset, the most similar one according
+to the Jaro-Winkler similarity was selected.
+
+Once tuples were matched, `Street Name` and `Street Type` in the
+permits dataset were replaced with `StreetName` and `StreetType` from
+the external dataset.
+
+### Miscellaneous Error Correction
 
 #### Non-complete permits with completion date
 Only permits whose status is "Complete" should be associated with a
