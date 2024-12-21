@@ -231,7 +231,22 @@ Section \ref{location-based-error-correction}.
 ## Outlier Detection and Removal
 
 ## Duplicate Detection and Removal
-
+Given previously performed error correction, and the use of external
+ground-truth datasets in particular, duplicate detection and removal was
+performed by exact matching between subsets of the attributes of tuples
+in the permits dataset.
+Selected attributes included the permit number and those associated with
+the location of the building permit, except its coordinates, as
+coordinates were found not to always match exactly, but rather be a few
+meters apart for duplicated permits.
+Therefore, only one tuple for each combination of
+`Permit Number`,
+`Street Name`,
+`Street Number`,
+`Street Number Suffix`,
+`Unit` and
+`Unit Suffix`
+was kept in the dataset.
 
 # Data Analysis
 
