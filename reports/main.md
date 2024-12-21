@@ -53,8 +53,19 @@ analysis.
 # Data Cleaning
 
 ## Data Normalisation
-As no major formatting issues were found in the dataset, only minor
-data normalisation was required.
+Two string attributes, `Description` and `Existing Use`, provide
+semi-structured natural language values which were processed in search
+of recurring patterns for encoding these attributes as categorical
+when possible, and so required special handling.
+No other attributes presented similar challenges, so minor normalisation
+was applied to them.
+
+### `Description` Attribute
+
+### `Existing Use` Attribute
+
+### Miscellaneous Data Normalisation
+Only minor data normalisation was required for the remaining attributes.
 Namely,
 attributes encoding dates whose data type was inadequately
 inferred by Pandas were encoded as `datetime` objects;
