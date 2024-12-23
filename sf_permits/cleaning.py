@@ -234,7 +234,9 @@ def fill_district_based_on_neighbourhood(df: pd.DataFrame) -> pd.DataFrame:
     neighbourhood_district_records = (
         df[["Neighborhood", "Supervisor District"]]
         .dropna()
-        .drop_duplicates("Neighborhood")  # Keep only a single neighbourhood per district
+        .drop_duplicates(
+            "Neighborhood"
+        )  # Keep only a single neighbourhood per district
         .to_dict("records")
     )
     neighbourhood_district_map = {
