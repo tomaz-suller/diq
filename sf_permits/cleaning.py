@@ -148,12 +148,11 @@ def main(
     report_missing_value_count(clean_df)
 
     logger.success("Missing value imputation complete")
-    logger.info("Starting outlier detection")
-    # Outlier detection
-    # TODO
-    logger.warning("Outlier detection not yet implemented")
+    logger.info("Starting outlier removal")
+    # Outlier removal
+    clean_df = remove_permits_inconsistencies(clean_df)
 
-    logger.success("Outlier detection complete")
+    logger.success("Outlier removal complete")
     logger.info("Starting duplicate removal")
     # Duplicate removal
     clean_df = drop_duplicate_position_permits(clean_df)
@@ -165,6 +164,25 @@ def main(
     logger.debug("Saving clean data to {}", output_path)
     clean_df.to_parquet(output_path)
     logger.success("Saved clean data")
+
+
+def remove_permits_inconsistencies(df: pd.DataFrame) -> pd.DataFrame:
+    df = df[
+        ~(df["Permit Type"].isin([3, 4, 5]) & df["Number of Existing Stories"].isnull())
+    ]
+    df = df.drop(
+        df[
+            (df["Number of Existing Stories"].notnull())
+            & (df["Permit Type"].isin([1, 2, 5]))
+        ].index
+    )
+    df = df.drop(
+        df[
+            (df["Existing Use"].notnull()) & (df["Permit Type"].isin([1, 2, 5, 3, 4]))
+        ].index
+    )
+    df = df.drop(df[(df["Estimated Cost"].notnull()) & (df["Permit Type"] == 6)].index)
+    return df
 
 
 def report_missing_value_count(df: pd.DataFrame) -> None:
