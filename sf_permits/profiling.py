@@ -55,11 +55,6 @@ def interestingness(input_: pd.Series | pd.DataFrame) -> float | None:
     return (value_counts.iloc[0] / value_counts.iloc[-1]).item()
 
 
-# def accuracy():
-#     """Assess syntactic accuracy."""
-#     ...
-
-
 def uniqueness(series: pd.Series, cutoff: int = 9) -> dict[str, int]:
     """Assess number of unique values."""
     counts = series.value_counts(normalize=True, sort=True, ascending=False, dropna=True)
@@ -91,24 +86,6 @@ def distribution(series: pd.Series) -> dict[str, float]:
     return series.describe().to_dict()
 
 
-@numeric_guard
-def inter_quantile_outliers(series: pd.Series, factor: float = 1.5) -> list[int]:
-    """Return indices of outliers according to interquartile range."""
-    quantiles = series.quantile([0.25, 0.5, 0.75])
-    inter_quantile_range = quantiles[0.75] - quantiles[0.25]
-    return np.nonzero(np.abs(series - quantiles[0.5]) > factor * inter_quantile_range)[
-        0
-    ].tolist()
-
-
-@numeric_guard
-def standard_deviation_outliers(series: pd.Series, factor: float = 3) -> list[int]:
-    """Return indices of outliers according to standard deviation."""
-    return np.nonzero(np.abs(series - series.mean()) > factor * series.std())[
-        0
-    ].tolist()
-
-
 DATAFRAME_METRICS = {
     original_dtypes,
     inferred_dtypes,
@@ -124,8 +101,6 @@ SERIES_METRICS = {
     interestingness,
     uniqueness,
     distribution,
-    inter_quantile_outliers,
-    standard_deviation_outliers,
 }
 
 ALL_METRICS = DATAFRAME_METRICS | SERIES_METRICS
