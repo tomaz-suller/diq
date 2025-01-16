@@ -7,6 +7,8 @@ name = "sf_permits"
 version = "0.0.1"
 description = "Politecnico di Milano Data and Information Quality 2024-2025 project"
 authors = [
+    { name = "Federica Maria Laudizi" },
+    { name = "Satvik Bisht" },
     { name = "Tomaz Maia Suller" },
 ]
 
