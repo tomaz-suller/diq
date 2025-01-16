@@ -10,7 +10,7 @@ from tqdm import tqdm
 import typer
 
 from sf_permits.config import (
-    INTERIM_DATASET_PATH,
+    CLEAN_DATASET_PATH,
     NEIGHBOURHOOD_SHAPEFILE_PATH,
     RAW_DATASET_PATH,
     STREET_NAMES_PATH,
@@ -52,7 +52,7 @@ STREET_NAME_REVERSE_JARO_SIMILARITY_THRESHOLD = 0.89
 @app.command()
 def main(
     input_path: Path = RAW_DATASET_PATH,
-    output_path: Path = INTERIM_DATASET_PATH,
+    output_path: Path = CLEAN_DATASET_PATH,
 ):
     logger.info("Starting data cleaning")
     logger.debug("Loading from {}", input_path)
