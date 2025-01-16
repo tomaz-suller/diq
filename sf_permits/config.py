@@ -24,7 +24,7 @@ PROFILING_DATA_DIR = DATA_DIR / "profiling"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 CLEAN_DATA_DIR = DATA_DIR / "clean"
 
-NEIGHBOURHOOD_SHAPEFILE_PATH = EXTERNAL_DATA_DIR  / "analysis-neighborhoods"
+NEIGHBOURHOOD_SHAPEFILE_PATH = EXTERNAL_DATA_DIR / "analysis-neighborhoods"
 ZIP_CODE_SHAPEFILE_PATH = EXTERNAL_DATA_DIR / "bay-area-zip-codes"
 STREET_NAMES_PATH = EXTERNAL_DATA_DIR / "street-names.csv"
 RAW_DATASET_FILENAME = "building_permits.csv"

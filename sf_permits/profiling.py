@@ -5,10 +5,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import typer
-from loguru import logger
 from tqdm import tqdm
 
-from sf_permits.config import PROFILING_DATA_DIR, RAW_DATA_DIR
+from sf_permits.config import PROFILING_DATA_DIR, RAW_DATA_DIR, logger
 
 
 def original_dtypes(df: pd.DataFrame) -> dict:
@@ -57,7 +56,9 @@ def interestingness(input_: pd.Series | pd.DataFrame) -> float | None:
 
 def uniqueness(series: pd.Series, cutoff: int = 9) -> dict[str, int]:
     """Assess number of unique values."""
-    counts = series.value_counts(normalize=True, sort=True, ascending=False, dropna=True)
+    counts = series.value_counts(
+        normalize=True, sort=True, ascending=False, dropna=True
+    )
     other_count = counts.iloc[cutoff:].sum()
     counts = counts.iloc[:cutoff]
     counts["other"] = other_count

@@ -14,10 +14,7 @@ PYTHON_INTERPRETER = python
 ## Install Python Dependencies
 .PHONY: requirements
 requirements:
-	uv sync
-
-
-
+	uv sync --all-extras
 
 ## Delete all compiled Python files
 .PHONY: clean
@@ -25,12 +22,12 @@ clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
-## Lint using flake8 and black (use `make format` to do formatting)
+## Lint using ruff
 .PHONY: lint
 lint:
 	ruff check --fix sf_permits
 
-## Format source code with black
+## Format source code with ruff
 .PHONY: format
 format:
 	ruff format sf_permits
@@ -41,14 +38,16 @@ format:
 #################################################################################
 
 
-## Make Dataset
-.PHONY: data
-data: requirements
-	$(PYTHON_INTERPRETER) sf_permits/dataset.py
+## Profile dataset
+.PHONY: data-profiling
+data-profiling: requirements
+	$(PYTHON_INTERPRETER) sf_permits/profiling.py
 
-.PHONY: report
-report:
-	make -C reports
+## Clean dataset
+.PHONY: data-cleaning
+data-cleaning: requirements
+	$(PYTHON_INTERPRETER) sf_permits/cleaning.py
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

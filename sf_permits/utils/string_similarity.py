@@ -19,7 +19,9 @@ def get_matching_strings(
     matching_indices: dict[int, list] = defaultdict(list)
     matching_values: dict[str, list] = defaultdict(list)  # Only for visualisation
 
-    for base_index, base_value in tqdm(base.items(), total=len(base), desc="String matching"):
+    for base_index, base_value in tqdm(
+        base.items(), total=len(base), desc="String matching"
+    ):
         logger.debug("Processing base value {}", base_value)
         block_key = base_value[:block_length]
         block = target[target.str.startswith(block_key)]
@@ -61,6 +63,7 @@ def levenshtein(base: str, target: str) -> float:
     distance = Levenshtein().distance(base, target)
     combined_length = len(base) + len(target)
     return 1 - distance / combined_length
+
 
 def jaro_winkler(base: str, target: str) -> float:
     return JaroWinkler().similarity(base, target)
