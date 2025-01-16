@@ -6,55 +6,81 @@
 
 Politecnico di Milano Data and Information Quality 2024-2025 project
 
+**Group members**
+| Name                  | Person Code |
+|-----------------------|-------------|
+Federica Maria Laudizi  | 10724111    |
+Satvik Bisht            | 10886954    |
+Tomaz Maia Suller       | 10987566    |
+
+**Project information**
+|            |    |
+|------------|----|
+| Project ID | 67 |
+| Dataset ID | 6  |
+
+## Usage
+
+### Dependencies
+This project uses [uv](https://github.com/astral-sh/uv) for managing dependencies and the Python virtual environment, so it must be
+installed.
+It also uses Python 3.12.
+
+### Data loading
+The raw dataset file `building_permits.csv` available in [Kaggle](https://www.kaggle.com/datasets/aparnashastry/building-permit-applications-data) must be placed in `data/raw`.
+External data must be downloaded from specified sources, moved to `data/external`
+and renamed according to the following table:
+
+| Name | Source | Format |
+|------|--------|--------|
+| `analysis-neighborhoods/` | https://data.sfgov.org/-/Analysis-Neighborhoods/j2bu-swwd/about_data                          | Shapefile |
+| `bay-area-zip-codes/`     | https://data.sfgov.org/dataset/Bay-Area-ZIP-Codes/4kz9-76pb/about_data                        | Shapefile |
+| `street-names.csv`        | https://data.sfgov.org/Geographic-Locations-and-Boundaries/Street-Names/6d9h-4u5v/about_data  | CSV       |
+
+### Pipeline execution
+A list of available commands is provided by `make help`.
+
+In particular:
+* `make data-cleaning` execute data profiling and outputs results to `data/profiling`;
+* `make data-cleaning` execute data cleaning and outputs results to `data/clean/dataset.parquet`;
+* `make requirements` creates a virtual environment and installs Python dependencies; it is automatically executed by the
+    previous commands and so should not need to be manually executed.
+
 ## Project Organization
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
+├── Makefile                    <- Makefile with convenience commands: `make data-profiling` or `make data-cleaning`.
+├── README.md                   <- The top-level README for developers using this project.
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
+│   ├── clean                   <- Final, canonical clean data for modelling
+│   ├── external                <- Third-party data.
+│   ├── interim                 <- Intermediate data that has been transformed (only used for development).
+│   ├── profiling               <- Profiling results.
+│   └── raw                     <- The original, immutable data dump.
 │
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+├── notebooks                   <- Jupyter notebooks for profiling analysis and modelling.
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── pyproject.toml              <- Project configuration file with package metadata for
+│                                  sf_permits and configuration for tools like ruff
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+├── references
+|   └── data-dictionary.xlsx    <- Data dictionary.
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         sf_permits and configuration for tools like black
+├── uv.lock                     <- The requirements file for reproducing the analysis environment.
 │
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── sf_permits   <- Source code for use in this project.
+└── sf_permits                  <- Source code for use in this project.
     │
     ├── __init__.py             <- Makes sf_permits a Python module
     │
-    ├── config.py               <- Store useful variables and configuration
+    ├── cleaning.py             <- Data cleaning.
     │
-    ├── dataset.py              <- Scripts to download or generate data
+    ├── config.py               <- Store useful variables and configuration.
     │
-    ├── features.py             <- Code to create features for modeling
+    ├── profiling.py            <- Raw data profiling.
     │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+    └── utils
+        ├── __init__.py
+        └── string_similarity.py
 ```
 
 --------
